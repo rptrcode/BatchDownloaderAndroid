@@ -35,7 +35,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class MainActivity extends Activity {
 	//private ProgressDialog simpleWaitDialog;
-	List<String> list = new CopyOnWriteArrayList<String>();
 	private int spawnedTasks = 0;
 	private int errorTasks = 0;
 	private int finishedTasks = 0;
@@ -45,6 +44,9 @@ public class MainActivity extends Activity {
 	Group inProgGroup = new Group("In Progress");
 	Group finishedGroup = new Group("Finished");
 	Group failedGroup = new Group("Failed");
+
+	List<String> list = new CopyOnWriteArrayList<String>();
+	Iterator<String> iter;
 
 	@Override
 	protected void onResume() {
@@ -87,6 +89,14 @@ public class MainActivity extends Activity {
 		list.clear();
 	}
 
+	private void batchDownload() {
+		if (iter.hasNext()) {
+			String downloadUrl = iter.next();
+			Log.e("PTRLOG", "batchDownload " + downloadUrl);
+			new Downloader(MainActivity.this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, downloadUrl, downloadUrl.substring(downloadUrl.lastIndexOf("/") + 1));
+		}
+	}
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -100,22 +110,10 @@ public class MainActivity extends Activity {
 				reset();
 				parse(str);
 				if (!list.isEmpty()) {
-					Toast.makeText(MainActivity.this, "batch download " + list.size() + " files..", Toast.LENGTH_SHORT).show();
-					final Iterator<String> iter = list.iterator();
-					final Timer timer = new Timer();
-					timer.scheduleAtFixedRate(new TimerTask() {
-						public void run() {
-							//Log.d("PTRLOG", "batch ");
-							for (int i = 0; i < 5 && iter.hasNext() && ((spawnedTasks - errorTasks - finishedTasks) < 5); i++) {
-								String downloadUrl = iter.next();
-								//Log.d("PTRLOG", "download " + downloadUrl);
-								new Downloader(MainActivity.this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, downloadUrl, downloadUrl.substring(downloadUrl.lastIndexOf("/") + 1));
-							}
-							if (!iter.hasNext()) {
-								timer.cancel();
-							}
-						}
-					}, 1000, 20000);
+					Log.e("PTRLOG", "onclick batchdownload");
+					for (int i = 0; i < 10 && iter.hasNext(); i++) {
+						batchDownload();
+					}
 				} else {
 					new Downloader(MainActivity.this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, str, str.substring(str.lastIndexOf("/") + 1));
 				}
@@ -148,6 +146,8 @@ public class MainActivity extends Activity {
 			result = url.substring(0, start) + i + url.substring(end + 1);
 			list.add(result);
 		}
+
+		iter = list.iterator();
 	}
 
 	class Downloader extends AsyncTask<Object, Void, Void> {
@@ -181,20 +181,20 @@ public class MainActivity extends Activity {
 					int pos = inProgGroup.children.indexOf(filename);
 					if (pos != -1) {//already existing files wont be pushed
 						inProgGroup.children.remove(pos);
-						mainContext.adapter.notifyDataSetChanged();
 					}
 					TextView path = (TextView) mainContext.findViewById(R.id.textView);
 					if (!error) {
 						finishedTasks++;
 						path.setText(String.valueOf(spawnedTasks) + "/" + String.valueOf(errorTasks) + "/" + String.valueOf(finishedTasks));
 						finishedGroup.children.add(filename);
-						mainContext.adapter.notifyDataSetChanged();
 					} else {
 						errorTasks++;
 						path.setText(String.valueOf(spawnedTasks) + "/" + String.valueOf(errorTasks) + "/" + String.valueOf(finishedTasks));
 						failedGroup.children.add(filename);
-						mainContext.adapter.notifyDataSetChanged();
 					}
+					mainContext.adapter.notifyDataSetChanged();
+					Log.e("PTRLOG", "onPostExecute batchDownload");
+					mainContext.batchDownload();
 				}
 			});
 
