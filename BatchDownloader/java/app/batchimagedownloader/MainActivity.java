@@ -1,6 +1,8 @@
-package app.batchdownloader;
+package app.batchimagedownloader;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -29,8 +31,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class MainActivity extends Activity {
@@ -38,7 +38,7 @@ public class MainActivity extends Activity {
 	private int spawnedTasks = 0;
 	private int errorTasks = 0;
 	private int finishedTasks = 0;
-	MyExpandableListAdapter adapter;
+	ExpandableListAdapter adapter;
 
 	SparseArray<Group> groups = new SparseArray<Group>();
 	Group inProgGroup = new Group("In Progress");
@@ -48,20 +48,28 @@ public class MainActivity extends Activity {
 	List<String> list = new CopyOnWriteArrayList<String>();
 	Iterator<String> iter;
 
+	String clipboardUrl="";
 	@Override
 	protected void onResume() {
 		super.onResume();
 
 		SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", MODE_PRIVATE);
-		String restoredurls = pref.getString("url", null);
-		String restoredpath = pref.getString("path", null);
-		if (null != restoredurls) {
-			EditText edit = (EditText) findViewById(R.id.editText);
-			edit.setText(restoredurls);
+		String restoredUrls;
+		if(clipboardUrl.isEmpty()) {
+			restoredUrls = pref.getString("url", null);
 		}
-		if (null != restoredpath) {
-			EditText edit = (EditText) findViewById(R.id.editText2);
-			edit.setText(restoredpath);
+		else {
+			restoredUrls = clipboardUrl;
+			clipboardUrl = "";
+		}
+		String restoredPath = pref.getString("path", null);
+		if (null != restoredUrls) {
+			EditText edit = (EditText) findViewById(R.id.url_edit_text);
+			edit.setText(restoredUrls);
+		}
+		if (null != restoredPath) {
+			EditText edit = (EditText) findViewById(R.id.path_edit_text);
+			edit.setText(restoredPath);
 		}
 
 	}
@@ -73,9 +81,9 @@ public class MainActivity extends Activity {
 		SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", MODE_PRIVATE);
 		SharedPreferences.Editor editor = pref.edit();
 
-		EditText url_edit = (EditText) findViewById(R.id.editText);
+		EditText url_edit = (EditText) findViewById(R.id.url_edit_text);
 		String url = url_edit.getEditableText().toString();
-		EditText path = (EditText) findViewById(R.id.editText2);
+		EditText path = (EditText) findViewById(R.id.path_edit_text);
 		String pathname = path.getEditableText().toString();
 
 		editor.putString("url", url);
@@ -90,7 +98,7 @@ public class MainActivity extends Activity {
 	}
 
 	private void batchDownload() {
-		if (iter.hasNext()) {
+		if (iter != null && iter.hasNext()) {
 			String downloadUrl = iter.next();
 			Log.e("PTRLOG", "batchDownload " + downloadUrl);
 			new Downloader(MainActivity.this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, downloadUrl, downloadUrl.substring(downloadUrl.lastIndexOf("/") + 1));
@@ -105,7 +113,7 @@ public class MainActivity extends Activity {
 		gobtn.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				EditText url_edit = (EditText) findViewById(R.id.editText);
+				EditText url_edit = (EditText) findViewById(R.id.url_edit_text);
 				String str = url_edit.getEditableText().toString();
 				reset();
 				parse(str);
@@ -120,13 +128,40 @@ public class MainActivity extends Activity {
 			}
 		});
 
+		ClipboardManager clipBoard = (ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+		clipBoard.addPrimaryClipChangedListener( new ClipboardListener() );
+
 		groups.append(0, inProgGroup);
 		groups.append(1, finishedGroup);
 		groups.append(2, failedGroup);
 
 		ExpandableListView listView = (ExpandableListView) findViewById(R.id.listView);
-		adapter = new MyExpandableListAdapter(this, groups);
+		adapter = new ExpandableListAdapter(this, groups);
 		listView.setAdapter(adapter);
+	}
+
+	public class ClipboardListener implements ClipboardManager.OnPrimaryClipChangedListener
+	{
+		String clipText ="";
+		ClipboardManager clipBoard = (ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+
+		public void onPrimaryClipChanged()
+		{
+			Log.e("PTRLOG","ClipboardListener onPrimaryClipChanged");
+			ClipData clipData = clipBoard.getPrimaryClip();
+			ClipData.Item item = clipData.getItemAt(0);
+			if(clipText.equals(item.getText().toString())) {
+				return;
+			} else {
+				clipText = item.getText().toString();
+				Log.e("PTRLOG", "ClipboardListener onPrimaryClipChanged " + clipText);
+				if(clipText.startsWith("http://")) {
+					clipboardUrl = clipText;
+					Log.e("PTRLOG", "ClipboardListener clipboardUrl set");
+				}
+			}
+
+		}
 	}
 
 	private void parse(String url) {
@@ -202,8 +237,13 @@ public class MainActivity extends Activity {
 
 		@Override
 		protected Void doInBackground(Object... params) {
-			EditText filepath = (EditText) findViewById(R.id.editText2);
+			EditText filepath = (EditText) findViewById(R.id.path_edit_text);
 			String filepathstr = filepath.getEditableText().toString();
+
+			File directory = new File(filepathstr);
+			if(!directory.exists()) {
+				final boolean mkdirs = directory.mkdirs();
+			}
 
 			filename = (String) params[1];
 			final File file = new File(filepathstr, filename);
@@ -287,112 +327,5 @@ public class MainActivity extends Activity {
 			}
 			return null;
 		}
-	}
-
-	public class Group {
-
-		public String string;
-		public final List<String> children = new ArrayList<String>();
-
-		public Group(String string) {
-			this.string = string;
-		}
-
-	}
-
-	private class MyExpandableListAdapter extends BaseExpandableListAdapter {
-
-		private final SparseArray<Group> groups;
-		public LayoutInflater inflater;
-		public Activity activity;
-
-
-		public MyExpandableListAdapter(Activity act, SparseArray<Group> groups) {
-			activity = act;
-			this.groups = groups;
-			inflater = act.getLayoutInflater();
-		}
-
-		@Override
-		public Object getChild(int groupPosition, int childPosition) {
-			return groups.get(groupPosition).children.get(childPosition);
-		}
-
-		@Override
-		public long getChildId(int groupPosition, int childPosition) {
-			return 0;
-		}
-
-		@Override
-		public View getChildView(int groupPosition, final int childPosition,
-		                         boolean isLastChild, View convertView, ViewGroup parent) {
-			final String children = (String) getChild(groupPosition, childPosition);
-			TextView text = null;
-			if (convertView == null) {
-				convertView = inflater.inflate(R.layout.row_layout, null);
-			}
-			text = (TextView) convertView.findViewById(R.id.textView1);
-			text.setText(children);
-			convertView.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					Toast.makeText(activity, children, Toast.LENGTH_SHORT).show();
-				}
-			});
-			return convertView;
-		}
-
-		@Override
-		public int getChildrenCount(int groupPosition) {
-			return groups.get(groupPosition).children.size();
-		}
-
-		@Override
-		public Object getGroup(int groupPosition) {
-			return groups.get(groupPosition);
-		}
-
-		@Override
-		public int getGroupCount() {
-			return groups.size();
-		}
-
-		@Override
-		public void onGroupCollapsed(int groupPosition) {
-			super.onGroupCollapsed(groupPosition);
-		}
-
-		@Override
-		public void onGroupExpanded(int groupPosition) {
-			super.onGroupExpanded(groupPosition);
-		}
-
-		@Override
-		public long getGroupId(int groupPosition) {
-			return 0;
-		}
-
-		@Override
-		public View getGroupView(int groupPosition, boolean isExpanded,
-		                         View convertView, ViewGroup parent) {
-			if (convertView == null) {
-				convertView = inflater.inflate(R.layout.listrow_group, null);
-			}
-			Group group = (Group) getGroup(groupPosition);
-			((CheckedTextView) convertView).setText(group.string);
-			((CheckedTextView) convertView).setChecked(isExpanded);
-			return convertView;
-		}
-
-		@Override
-		public boolean hasStableIds() {
-			return false;
-		}
-
-		@Override
-		public boolean isChildSelectable(int groupPosition, int childPosition) {
-			return false;
-		}
-
 	}
 }
