@@ -40,10 +40,10 @@ public class MainActivity extends Activity {
 	private int finishedTasks = 0;
 	ExpandableListAdapter adapter;
 
-	SparseArray<Group> groups = new SparseArray<Group>();
-	Group inProgGroup = new Group("In Progress");
-	Group finishedGroup = new Group("Finished");
-	Group failedGroup = new Group("Failed");
+	SparseArray<Group> tasksGroups = new SparseArray<Group>();
+	Group spawnedTasksGroup = new Group("In Progress");
+	Group finishedTasksGroup = new Group("Finished");
+	Group errorTasksGroup = new Group("Failed");
 
 	List<String> list = new CopyOnWriteArrayList<String>();
 	Iterator<String> iter;
@@ -95,6 +95,16 @@ public class MainActivity extends Activity {
 	private void reset() {
 		spawnedTasks = errorTasks = finishedTasks = 0;
 		list.clear();
+		
+		//without collapse clear will crash as view is still displayed.
+		ExpandableListView listView = (ExpandableListView) findViewById(R.id.listView);
+		listView.collapseGroup(0);
+		listView.collapseGroup(1);
+		listView.collapseGroup(2);
+		spawnedTasksGroup.clear();
+		errorTasksGroup.clear();
+		finishedTasksGroup.clear();
+
 	}
 
 	private void batchDownload() {
@@ -131,13 +141,14 @@ public class MainActivity extends Activity {
 		ClipboardManager clipBoard = (ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
 		clipBoard.addPrimaryClipChangedListener( new ClipboardListener() );
 
-		groups.append(0, inProgGroup);
-		groups.append(1, finishedGroup);
-		groups.append(2, failedGroup);
+		tasksGroups.append(0, spawnedTasksGroup);
+		tasksGroups.append(1, errorTasksGroup);
+		tasksGroups.append(2, finishedTasksGroup);
 
 		ExpandableListView listView = (ExpandableListView) findViewById(R.id.listView);
-		adapter = new ExpandableListAdapter(this, groups);
+		adapter = new ExpandableListAdapter(this, tasksGroups);
 		listView.setAdapter(adapter);
+		
 	}
 
 	public class ClipboardListener implements ClipboardManager.OnPrimaryClipChangedListener
@@ -213,19 +224,19 @@ public class MainActivity extends Activity {
 			MainActivity.this.runOnUiThread(new Runnable() {
 				public void run() {
 
-					int pos = inProgGroup.children.indexOf(filename);
+					int pos = spawnedTasksGroup.children.indexOf(filename);
 					if (pos != -1) {//already existing files wont be pushed
-						inProgGroup.children.remove(pos);
+						spawnedTasksGroup.children.remove(pos);
 					}
 					TextView path = (TextView) mainContext.findViewById(R.id.textView);
 					if (!error) {
 						finishedTasks++;
 						path.setText(String.valueOf(spawnedTasks) + "/" + String.valueOf(errorTasks) + "/" + String.valueOf(finishedTasks));
-						finishedGroup.children.add(filename);
+						finishedTasksGroup.children.add(filename);
 					} else {
 						errorTasks++;
 						path.setText(String.valueOf(spawnedTasks) + "/" + String.valueOf(errorTasks) + "/" + String.valueOf(finishedTasks));
-						failedGroup.children.add(filename);
+						errorTasksGroup.children.add(filename);
 					}
 					mainContext.adapter.notifyDataSetChanged();
 					Log.e("PTRLOG", "onPostExecute batchDownload");
@@ -254,7 +265,7 @@ public class MainActivity extends Activity {
 
 			MainActivity.this.runOnUiThread(new Runnable() {
 				public void run() {
-					inProgGroup.children.add(filename);
+					spawnedTasksGroup.children.add(filename);
 					mainContext.adapter.notifyDataSetChanged();
 				}
 			});
