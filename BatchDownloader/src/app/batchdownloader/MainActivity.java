@@ -1,4 +1,4 @@
-package app.batchimagedownloader;
+package app.batchdownloader;
 
 import android.app.Activity;
 import android.content.ClipData;
@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
@@ -18,6 +19,7 @@ import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import app.batchdownloader.R;
 
 
 import java.io.File;
@@ -35,9 +37,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class MainActivity extends Activity {
 	//private ProgressDialog simpleWaitDialog;
-	private int spawnedTasks = 0;
-	private int errorTasks = 0;
-	private int finishedTasks = 0;
+	public int spawnedTasks = 0;
+	public int errorTasks = 0;
+	public int finishedTasks = 0;
 	ExpandableListAdapter adapter;
 
 	SparseArray<Group> tasksGroups = new SparseArray<Group>();
@@ -107,14 +109,21 @@ public class MainActivity extends Activity {
 
 	}
 
-	private void batchDownload() {
+	public void batchDownload() {
 		if (iter != null && iter.hasNext()) {
 			String downloadUrl = iter.next();
 			Log.e("PTRLOG", "batchDownload " + downloadUrl);
 			new Downloader(MainActivity.this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, downloadUrl, downloadUrl.substring(downloadUrl.lastIndexOf("/") + 1));
 		}
 	}
+	
+	public void singleFileDownload(String url) {
+		Log.e("PTRLOG","singleFileDownload");
 
+		String filename = url.substring(url.lastIndexOf("/") + 1);
+		new Downloader(MainActivity.this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url, filename);
+	}
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -133,7 +142,8 @@ public class MainActivity extends Activity {
 						batchDownload();
 					}
 				} else {
-					new Downloader(MainActivity.this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, str, str.substring(str.lastIndexOf("/") + 1));
+					//new Downloader(MainActivity.this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, str, str.substring(str.lastIndexOf("/") + 1));
+					singleFileDownload(str);
 				}
 			}
 		});
@@ -168,7 +178,9 @@ public class MainActivity extends Activity {
 				Log.e("PTRLOG", "ClipboardListener onPrimaryClipChanged " + clipText);
 				if(clipText.startsWith("http://")) {
 					clipboardUrl = clipText;
+
 					Log.e("PTRLOG", "ClipboardListener clipboardUrl set");
+					singleFileDownload(clipboardUrl);
 				}
 			}
 
@@ -196,147 +208,10 @@ public class MainActivity extends Activity {
 		iter = list.iterator();
 	}
 
-	class Downloader extends AsyncTask<Object, Void, Void> {
-		private MainActivity mainContext;
-		private boolean error = false;
-		private String filename;
 
-		public Downloader(MainActivity context) {
-			mainContext = context;
-		}
-
-		@Override
-		protected void onPreExecute() {
-			MainActivity.this.runOnUiThread(new Runnable() {
-				public void run() {
-					TextView path = (TextView) mainContext.findViewById(R.id.textView);
-					spawnedTasks++;
-					path.setText(String.valueOf(spawnedTasks) + "/" + String.valueOf(errorTasks) + "/" + String.valueOf(finishedTasks));
-				}
-			});
-
-		}
-
-		@Override
-		protected void onPostExecute(Void aVoid) {
-			super.onPostExecute(aVoid);
-
-			MainActivity.this.runOnUiThread(new Runnable() {
-				public void run() {
-
-					int pos = spawnedTasksGroup.children.indexOf(filename);
-					if (pos != -1) {//already existing files wont be pushed
-						spawnedTasksGroup.children.remove(pos);
-					}
-					TextView path = (TextView) mainContext.findViewById(R.id.textView);
-					if (!error) {
-						finishedTasks++;
-						path.setText(String.valueOf(spawnedTasks) + "/" + String.valueOf(errorTasks) + "/" + String.valueOf(finishedTasks));
-						finishedTasksGroup.children.add(filename);
-					} else {
-						errorTasks++;
-						path.setText(String.valueOf(spawnedTasks) + "/" + String.valueOf(errorTasks) + "/" + String.valueOf(finishedTasks));
-						errorTasksGroup.children.add(filename);
-					}
-					mainContext.adapter.notifyDataSetChanged();
-					Log.e("PTRLOG", "onPostExecute batchDownload");
-					mainContext.batchDownload();
-				}
-			});
-
-		}
-
-		@Override
-		protected Void doInBackground(Object... params) {
-			EditText filepath = (EditText) findViewById(R.id.path_edit_text);
-			String filepathstr = filepath.getEditableText().toString();
-
-			File directory = new File(filepathstr);
-			if(!directory.exists()) {
-				final boolean mkdirs = directory.mkdirs();
-			}
-
-			filename = (String) params[1];
-			final File file = new File(filepathstr, filename);
-			if (file.exists()) {
-				error = true;
-				return null;
-			}
-
-			MainActivity.this.runOnUiThread(new Runnable() {
-				public void run() {
-					spawnedTasksGroup.children.add(filename);
-					mainContext.adapter.notifyDataSetChanged();
-				}
-			});
-
-			URL url = null;
-			try {
-				url = new URL((String) params[0]);
-			} catch (MalformedURLException e1) {
-				error = true;
-				e1.printStackTrace();
-			}
-			HttpURLConnection urlConnection = null;
-			if (url != null) {
-				try {
-					urlConnection = (HttpURLConnection) url.openConnection();
-				} catch (IOException e1) {
-					error = true;
-					e1.printStackTrace();
-				}
-			}
-			if (urlConnection == null) {
-				error = true;
-				return null;
-			}
-			if (urlConnection.getContentLength() < 10000) {
-				Log.d("PTRLOG", "getContentLength()<10000");
-				error = true;
-				return null;
-			}
-			InputStream inputStream = null;
-			try {
-				inputStream = urlConnection.getInputStream();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-
-			if (inputStream == null) {
-				Log.d("PTRLOG", "inputstream null");
-				error = true;
-				return null;
-			}
-
-
-			FileOutputStream outStream = null;
-			try {
-				outStream = new FileOutputStream(file);
-			} catch (FileNotFoundException e1) {
-				error = true;
-				e1.printStackTrace();
-			}
-			try {
-				final byte[] buffer = new byte[1024];
-				int bufferLength = 0;
-
-				while ((bufferLength = inputStream.read(buffer)) > 0) {
-					outStream.write(buffer, 0, bufferLength);
-				}
-			} catch (Exception e) {
-				Log.d("PTRLOG", "doinback file exception=" + e.getMessage());
-				error = true;
-			} finally {
-				if (outStream != null) {
-					try {
-						outStream.close();
-					} catch (IOException e) {
-						error = true;
-						e.printStackTrace();
-					}
-				}
-			}
-			return null;
-		}
-	}
+@Override
+public boolean onOptionsItemSelected(MenuItem item) {
+	// TODO Auto-generated method stub
+	return super.onOptionsItemSelected(item);
+}
 }

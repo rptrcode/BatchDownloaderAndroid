@@ -1,4 +1,4 @@
-package app.batchimagedownloader;
+package app.batchdownloader;
 
 import java.util.ArrayList;
 import java.util.List;
