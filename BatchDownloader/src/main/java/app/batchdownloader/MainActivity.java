@@ -2,15 +2,12 @@ package app.batchdownloader;
 
 import android.app.Activity;
 import android.app.Dialog;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.SparseArray;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -26,8 +23,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import ar.com.daidalos.afiledialog.FileChooserDialog;
 
 public class MainActivity extends Activity {
-	private static final int REQUEST_CHOOSER = 1234;
-	//private ProgressDialog simpleWaitDialog;
 	public int spawnedTasks = 0;
 	public int errorTasks = 0;
 	public int finishedTasks = 0;
@@ -42,6 +37,7 @@ public class MainActivity extends Activity {
 	Iterator<String> iter;
 
 	String clipboardUrl = "";
+
 
 	FileChooserDialog fileDialog;
 
@@ -117,6 +113,9 @@ public class MainActivity extends Activity {
 	}
 
 	public void singleFileDownload(String url) {
+		//called by clipboard
+		clipboardUrl = url;
+
 		String filename = url.substring(url.lastIndexOf("/") + 1);
 		new Downloader(MainActivity.this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url, filename);
 	}
@@ -134,7 +133,6 @@ public class MainActivity extends Activity {
 				reset();
 				parse(str);
 				if (!list.isEmpty()) {
-					Log.e("PTRLOG", "onclick batchdownload");
 					for (int i = 0; i < 10 && iter.hasNext(); i++) {
 						batchDownload();
 					}
@@ -145,8 +143,6 @@ public class MainActivity extends Activity {
 			}
 		});
 
-		ClipboardManager clipBoard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-		clipBoard.addPrimaryClipChangedListener(new ClipboardListener());
 
 		tasksGroups.append(0, spawnedTasksGroup);
 		tasksGroups.append(1, errorTasksGroup);
@@ -155,6 +151,8 @@ public class MainActivity extends Activity {
 		ExpandableListView listView = (ExpandableListView) findViewById(R.id.listView);
 		adapter = new ExpandableListAdapter(this, tasksGroups);
 		listView.setAdapter(adapter);
+
+		ClipboardListener mClipboardListener = new ClipboardListener(MainActivity.this);
 
 
 		TextView path = (TextView) findViewById(R.id.path_text);
@@ -219,29 +217,4 @@ public class MainActivity extends Activity {
 		iter = list.iterator();
 	}
 
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		// TODO Auto-generated method stub
-		return super.onOptionsItemSelected(item);
-	}
-
-	public class ClipboardListener implements ClipboardManager.OnPrimaryClipChangedListener {
-		String clipText = "";
-		ClipboardManager clipBoard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-
-		public void onPrimaryClipChanged() {
-			ClipData clipData = clipBoard.getPrimaryClip();
-			ClipData.Item item = clipData.getItemAt(0);
-			if (clipText.equals(item.getText().toString())) {
-				return;
-			} else {
-				clipText = item.getText().toString();
-				if (clipText.startsWith("http://")) {
-					clipboardUrl = clipText;
-					singleFileDownload(clipboardUrl);
-				}
-			}
-
-		}
-	}
 }
