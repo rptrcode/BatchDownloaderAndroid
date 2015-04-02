@@ -5,12 +5,9 @@ import android.util.Log;
 import android.widget.TextView;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 public class Downloader extends AsyncTask<Object, Void, Void> {
@@ -87,71 +84,25 @@ public class Downloader extends AsyncTask<Object, Void, Void> {
 			}
 		});
 
-		URL url = null;
 		try {
-			url = new URL((String) params[0]);
-		} catch (MalformedURLException e1) {
-			error = true;
-			e1.printStackTrace();
-		}
-		HttpURLConnection urlConnection = null;
-		if (url != null) {
-			try {
-				urlConnection = (HttpURLConnection) url.openConnection();
-			} catch (IOException e1) {
+			URL url = new URL((String) params[0]);
+			HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+			if (urlConnection.getContentLength() < 5000) {
 				error = true;
-				e1.printStackTrace();
+				return null;
 			}
-		}
-		if (urlConnection == null) {
-			error = true;
-			return null;
-		}
-		if (urlConnection.getContentLength() < 10000) {
-			Log.d("PTRLOG", "getContentLength()<10000");
-			error = true;
-			return null;
-		}
-		InputStream inputStream = null;
-		try {
-			inputStream = urlConnection.getInputStream();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		if (inputStream == null) {
-			Log.d("PTRLOG", "inputstream null");
-			error = true;
-			return null;
-		}
-
-
-		FileOutputStream outStream = null;
-		try {
-			outStream = new FileOutputStream(file);
-		} catch (FileNotFoundException e1) {
-			error = true;
-			e1.printStackTrace();
-		}
-		try {
+			InputStream inputStream = urlConnection.getInputStream();
+			FileOutputStream outStream = new FileOutputStream(file);
 			final byte[] buffer = new byte[1024];
 			int bufferLength = 0;
 
 			while ((bufferLength = inputStream.read(buffer)) > 0) {
 				outStream.write(buffer, 0, bufferLength);
 			}
-		} catch (Exception e) {
-			Log.d("PTRLOG", "doinback file exception=" + e.getMessage());
+			outStream.close();
+		} catch (Exception e1) {
 			error = true;
-		} finally {
-			if (outStream != null) {
-				try {
-					outStream.close();
-				} catch (IOException e) {
-					error = true;
-					e.printStackTrace();
-				}
-			}
+			e1.printStackTrace();
 		}
 		return null;
 	}

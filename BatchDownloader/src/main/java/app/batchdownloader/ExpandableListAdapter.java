@@ -1,30 +1,20 @@
 package app.batchdownloader;
 
 import android.app.Activity;
-import android.app.Dialog;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.CheckedTextView;
-import android.widget.ImageView;
 import android.widget.TextView;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 /**
  * Created by puttaraju on 16-05-2015.
  */
 public class ExpandableListAdapter extends BaseExpandableListAdapter {
 
-	private static final int IMAGE_MAX_SIZE = 350;
+
 	private final SparseArray<Group> groups;
 	public LayoutInflater inflater;
 	public Activity activity;
@@ -63,73 +53,13 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 
 				TextView filepath = (TextView) activity.findViewById(R.id.path_text);
 				String filepathstr = filepath.getText().toString();
-
-				File directory = new File(filepathstr);
-				if (directory.exists()) {
-					Dialog settingsDialog = new Dialog(activity);
-					settingsDialog.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
-					ImageView image = new ImageView(activity);
-					image.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-					File imageFile = new File(directory.getPath() + "/" + children);
-					if (imageFile.exists()) {
-						image.setImageBitmap(decodeFileLocal(imageFile));
-						settingsDialog.setContentView(image);
-						settingsDialog.show();
-					}
-				}
+				ImageViewer imageViewer = new ImageViewer(activity, filepathstr, children);
 
 			}
 		});
 		return convertView;
 	}
 
-	private Bitmap decodeFileLocal(File f) {
-		Bitmap b = null;
-
-		//Decode image size
-		BitmapFactory.Options o = new BitmapFactory.Options();
-		o.inJustDecodeBounds = true;
-
-		FileInputStream fis = null;
-		try {
-			fis = new FileInputStream(f);
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		BitmapFactory.decodeStream(fis, null, o);
-		try {
-			fis.close();
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-
-		int scale = 1;
-		if (o.outHeight > IMAGE_MAX_SIZE || o.outWidth > IMAGE_MAX_SIZE) {
-			scale = (int) Math.pow(2, (int) Math.ceil(Math.log(IMAGE_MAX_SIZE /
-					(double) Math.max(o.outHeight, o.outWidth)) / Math.log(0.5)));
-		}
-
-		//Decode with inSampleSize
-		BitmapFactory.Options o2 = new BitmapFactory.Options();
-		o2.inSampleSize = scale;
-		try {
-			fis = new FileInputStream(f);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		b = BitmapFactory.decodeStream(fis, null, o2);
-		try {
-			fis.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		return b;
-	}
 
 
 	@Override
