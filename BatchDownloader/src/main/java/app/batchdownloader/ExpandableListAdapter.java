@@ -9,9 +9,6 @@ import android.widget.BaseExpandableListAdapter;
 import android.widget.CheckedTextView;
 import android.widget.TextView;
 
-/**
- * Created by puttaraju on 16-05-2015.
- */
 public class ExpandableListAdapter extends BaseExpandableListAdapter {
 
 

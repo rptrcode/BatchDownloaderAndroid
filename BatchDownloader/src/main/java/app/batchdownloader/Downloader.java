@@ -1,7 +1,6 @@
 package app.batchdownloader;
 
 import android.os.AsyncTask;
-import android.util.Log;
 import android.widget.TextView;
 
 import java.io.File;
@@ -53,7 +52,6 @@ public class Downloader extends AsyncTask<Object, Void, Void> {
 					mainContext.errorTasksGroup.children.add(filename);
 				}
 				mainContext.adapter.notifyDataSetChanged();
-				Log.e("PTRLOG", "onPostExecute batchDownload");
 				mainContext.batchDownload();
 			}
 		});
@@ -63,7 +61,11 @@ public class Downloader extends AsyncTask<Object, Void, Void> {
 	@Override
 	protected Void doInBackground(Object... params) {
 		TextView filepath = (TextView) mainContext.findViewById(R.id.path_text);
-		String filepathstr = filepath.getText().toString();
+		TextView urlview = (TextView) mainContext.findViewById(R.id.url_edit_text);
+		String urlString = urlview.getText().toString();
+		String str = urlString.substring(urlString.indexOf("http://") + 6, urlString.lastIndexOf("/"));
+
+		String filepathstr = filepath.getText().toString() + str;
 
 		File directory = new File(filepathstr);
 		if (!directory.exists()) {

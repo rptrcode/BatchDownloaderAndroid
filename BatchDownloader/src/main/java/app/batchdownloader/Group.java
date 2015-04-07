@@ -3,10 +3,6 @@ package app.batchdownloader;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by puttaraju on 16-05-2015.
- */
-
 public class Group {
 
 	public final List<String> children = new ArrayList<String>();
