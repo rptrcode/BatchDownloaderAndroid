@@ -49,7 +49,10 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 				//Toast.makeText(activity, children, Toast.LENGTH_SHORT).show();
 
 				TextView filepath = (TextView) activity.findViewById(R.id.path_text);
-				String filepathstr = filepath.getText().toString();
+				TextView urlview = (TextView) activity.findViewById(R.id.url_edit_text);
+				String urlString = urlview.getText().toString();
+				String str = urlString.substring(urlString.indexOf("http://") + 6, urlString.lastIndexOf("/"));
+				String filepathstr = filepath.getText().toString() + str;
 				ImageViewer imageViewer = new ImageViewer(activity, filepathstr, children);
 
 			}

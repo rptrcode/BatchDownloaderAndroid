@@ -61,8 +61,8 @@ public class Downloader extends AsyncTask<Object, Void, Void> {
 	@Override
 	protected Void doInBackground(Object... params) {
 		TextView filepath = (TextView) mainContext.findViewById(R.id.path_text);
-		TextView urlview = (TextView) mainContext.findViewById(R.id.url_edit_text);
-		String urlString = urlview.getText().toString();
+//		TextView urlview = (TextView) mainContext.findViewById(R.id.url_edit_text);
+		String urlString = (String) params[0];
 		String str = urlString.substring(urlString.indexOf("http://") + 6, urlString.lastIndexOf("/"));
 
 		String filepathstr = filepath.getText().toString() + str;
