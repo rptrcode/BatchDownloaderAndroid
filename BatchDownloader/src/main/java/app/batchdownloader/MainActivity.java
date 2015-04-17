@@ -217,4 +217,30 @@ public class MainActivity extends Activity {
 		iter = list.iterator();
 	}
 
+
+	public static class FileInfo {
+		private String filename;
+		private String filepath;
+
+		public FileInfo(String path, String name) {
+			filepath = path;
+			filename = name;
+		}
+
+		void setFilename(String str) {
+			filename = str;
+		}
+
+		public String getFilename() {
+			return filename;
+		}
+
+		void setFilepath(String str) {
+			filepath = str;
+		}
+
+		public String getFilepath() {
+			return filepath;
+		}
+	}
 }

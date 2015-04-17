@@ -12,7 +12,7 @@ import java.net.URL;
 public class Downloader extends AsyncTask<Object, Void, Void> {
 	private MainActivity mainContext;
 	private boolean error = false;
-	private String filename;
+	private MainActivity.FileInfo mFileInfo;
 
 	public Downloader(MainActivity context) {
 		mainContext = context;
@@ -37,7 +37,7 @@ public class Downloader extends AsyncTask<Object, Void, Void> {
 		mainContext.runOnUiThread(new Runnable() {
 			public void run() {
 
-				int pos = mainContext.spawnedTasksGroup.children.indexOf(filename);
+				int pos = mainContext.spawnedTasksGroup.children.indexOf(mFileInfo);
 				if (pos != -1) {//already existing files wont be pushed
 					mainContext.spawnedTasksGroup.children.remove(pos);
 				}
@@ -45,11 +45,11 @@ public class Downloader extends AsyncTask<Object, Void, Void> {
 				if (!error) {
 					mainContext.finishedTasks++;
 					path.setText(String.valueOf(mainContext.spawnedTasks) + "/" + String.valueOf(mainContext.errorTasks) + "/" + String.valueOf(mainContext.finishedTasks));
-					mainContext.finishedTasksGroup.children.add(filename);
+					mainContext.finishedTasksGroup.children.add(mFileInfo);
 				} else {
 					mainContext.errorTasks++;
 					path.setText(String.valueOf(mainContext.spawnedTasks) + "/" + String.valueOf(mainContext.errorTasks) + "/" + String.valueOf(mainContext.finishedTasks));
-					mainContext.errorTasksGroup.children.add(filename);
+					mainContext.errorTasksGroup.children.add(mFileInfo);
 				}
 				mainContext.adapter.notifyDataSetChanged();
 				mainContext.batchDownload();
@@ -63,17 +63,24 @@ public class Downloader extends AsyncTask<Object, Void, Void> {
 		TextView filepath = (TextView) mainContext.findViewById(R.id.path_text);
 //		TextView urlview = (TextView) mainContext.findViewById(R.id.url_edit_text);
 		String urlString = (String) params[0];
-		String str = urlString.substring(urlString.indexOf("http://") + 6, urlString.lastIndexOf("/"));
+		String str = "";
+		if (urlString.startsWith("http://"))
+			str = urlString.substring(urlString.indexOf("http://") + 6, urlString.lastIndexOf("/"));
+		else if (urlString.startsWith("https://"))
+			str = urlString.substring(urlString.indexOf("https://") + 7, urlString.lastIndexOf("/"));
+		else
+			return null;
 
-		String filepathstr = filepath.getText().toString() + str;
-
-		File directory = new File(filepathstr);
+		String filepathStr = filepath.getText().toString() + str;
+		File directory = new File(filepathStr);
 		if (!directory.exists()) {
 			final boolean mkdirs = directory.mkdirs();
 		}
 
-		filename = (String) params[1];
-		final File file = new File(filepathstr, filename);
+		String filename = (String) params[1];
+		mFileInfo = new MainActivity.FileInfo(filepathStr, filename);
+
+		final File file = new File(filepathStr, filename);
 		if (file.exists()) {
 			error = true;
 			return null;
@@ -81,7 +88,7 @@ public class Downloader extends AsyncTask<Object, Void, Void> {
 
 		mainContext.runOnUiThread(new Runnable() {
 			public void run() {
-				mainContext.spawnedTasksGroup.children.add(filename);
+				mainContext.spawnedTasksGroup.children.add(mFileInfo);
 				mainContext.adapter.notifyDataSetChanged();
 			}
 		});

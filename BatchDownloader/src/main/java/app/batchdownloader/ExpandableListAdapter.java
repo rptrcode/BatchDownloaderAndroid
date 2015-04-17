@@ -36,24 +36,24 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 	@Override
 	public View getChildView(int groupPosition, final int childPosition,
 	                         boolean isLastChild, View convertView, ViewGroup parent) {
-		final String children = (String) getChild(groupPosition, childPosition);
+		final MainActivity.FileInfo child = (MainActivity.FileInfo) getChild(groupPosition, childPosition);
 		TextView text = null;
 		if (convertView == null) {
 			convertView = inflater.inflate(R.layout.row_layout, null);
 		}
 		text = (TextView) convertView.findViewById(R.id.textView1);
-		text.setText(children);
+		text.setText(child.getFilename());
 		convertView.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				//Toast.makeText(activity, children, Toast.LENGTH_SHORT).show();
 
-				TextView filepath = (TextView) activity.findViewById(R.id.path_text);
-				TextView urlview = (TextView) activity.findViewById(R.id.url_edit_text);
-				String urlString = urlview.getText().toString();
-				String str = urlString.substring(urlString.indexOf("http://") + 6, urlString.lastIndexOf("/"));
-				String filepathstr = filepath.getText().toString() + str;
-				ImageViewer imageViewer = new ImageViewer(activity, filepathstr, children);
+//				TextView filepath = (TextView) activity.findViewById(R.id.path_text);
+//				TextView urlview = (TextView) activity.findViewById(R.id.url_edit_text);
+//				String urlString = urlview.getText().toString();
+//				String str = urlString.substring(urlString.indexOf("http://") + 6, urlString.lastIndexOf("/"));
+//				String filepathstr = filepath.getText().toString() + str;
+				ImageViewer imageViewer = new ImageViewer(activity, child.getFilepath(), child.getFilename());
 
 			}
 		});
@@ -99,7 +99,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 			convertView = inflater.inflate(R.layout.listrow_group, null);
 		}
 		Group group = (Group) getGroup(groupPosition);
-		((CheckedTextView) convertView).setText(group.string);
+		((CheckedTextView) convertView).setText(group.getGroupName());
 		((CheckedTextView) convertView).setChecked(isExpanded);//		
 		return convertView;
 	}

@@ -23,7 +23,7 @@ public class ClipboardListener implements ClipboardManager.OnPrimaryClipChangedL
 			return;
 		} else {
 			clipText = item.getText().toString();
-			if (clipText.startsWith("http://")) {
+			if (clipText.startsWith("http://") || clipText.startsWith("https://")) {
 				//clipboardUrl = clipText;
 				mActivity.singleFileDownload(clipText);
 			}
