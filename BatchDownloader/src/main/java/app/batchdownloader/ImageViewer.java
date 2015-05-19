@@ -15,22 +15,29 @@ import java.io.IOException;
 
 public class ImageViewer {
 	private static final int IMAGE_MAX_SIZE = 550;
+	private File mImageFile;
+	private Activity mActivity;
 
 	public ImageViewer(Activity activity, String filepath, String filename) {
+		mActivity = activity;
 		File directory = new File(filepath);
 		if (directory.exists()) {
-			Dialog settingsDialog = new Dialog(activity);
-			settingsDialog.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
-			ImageView image = new ImageView(activity);
-			image.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-			File imageFile = new File(directory.getPath() + "/" + filename);
-			if (imageFile.exists()) {
-				image.setImageBitmap(decodeFileLocal(imageFile));
-				settingsDialog.setContentView(image);
-				settingsDialog.show();
-			}
+			mImageFile = new File(directory.getPath() + "/" + filename);
 		}
 	}
+
+	public void show() {
+		if (mImageFile.exists()) {
+			Dialog settingsDialog = new Dialog(mActivity);
+			settingsDialog.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
+			ImageView image = new ImageView(mActivity);
+			image.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+			image.setImageBitmap(decodeFileLocal(mImageFile));
+			settingsDialog.setContentView(image);
+			settingsDialog.show();
+		}
+	}
+
 
 	private Bitmap decodeFileLocal(File f) {
 		Bitmap b = null;

@@ -12,7 +12,7 @@ import java.net.URL;
 public class Downloader extends AsyncTask<Object, Void, Void> {
 	private MainActivity mainContext;
 	private boolean error = false;
-	private MainActivity.FileInfo mFileInfo;
+	private FileInfo mFileInfo;
 
 	public Downloader(MainActivity context) {
 		mainContext = context;
@@ -37,19 +37,19 @@ public class Downloader extends AsyncTask<Object, Void, Void> {
 		mainContext.runOnUiThread(new Runnable() {
 			public void run() {
 
-				int pos = mainContext.spawnedTasksGroup.children.indexOf(mFileInfo);
+				int pos = mainContext.spawnedTasksGroup.children().indexOf(mFileInfo);
 				if (pos != -1) {//already existing files wont be pushed
-					mainContext.spawnedTasksGroup.children.remove(pos);
+					mainContext.spawnedTasksGroup.children().remove(pos);
 				}
 				TextView path = (TextView) mainContext.findViewById(R.id.textView);
 				if (!error) {
 					mainContext.finishedTasks++;
 					path.setText(String.valueOf(mainContext.spawnedTasks) + "/" + String.valueOf(mainContext.errorTasks) + "/" + String.valueOf(mainContext.finishedTasks));
-					mainContext.finishedTasksGroup.children.add(mFileInfo);
+					mainContext.finishedTasksGroup.children().add(mFileInfo);
 				} else {
 					mainContext.errorTasks++;
 					path.setText(String.valueOf(mainContext.spawnedTasks) + "/" + String.valueOf(mainContext.errorTasks) + "/" + String.valueOf(mainContext.finishedTasks));
-					mainContext.errorTasksGroup.children.add(mFileInfo);
+					mainContext.errorTasksGroup.children().add(mFileInfo);
 				}
 				mainContext.adapter.notifyDataSetChanged();
 				mainContext.batchDownload();
@@ -78,17 +78,18 @@ public class Downloader extends AsyncTask<Object, Void, Void> {
 		}
 
 		String filename = (String) params[1];
-		mFileInfo = new MainActivity.FileInfo(filepathStr, filename);
+		mFileInfo = new FileInfo(filepathStr, filename);
 
 		final File file = new File(filepathStr, filename);
 		if (file.exists()) {
 			error = true;
+			mFileInfo.setError("File Already Exists");
 			return null;
 		}
 
 		mainContext.runOnUiThread(new Runnable() {
 			public void run() {
-				mainContext.spawnedTasksGroup.children.add(mFileInfo);
+				mainContext.spawnedTasksGroup.children().add(mFileInfo);
 				mainContext.adapter.notifyDataSetChanged();
 			}
 		});
@@ -97,6 +98,7 @@ public class Downloader extends AsyncTask<Object, Void, Void> {
 			URL url = new URL((String) params[0]);
 			HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
 			if (urlConnection.getContentLength() < 5000) {
+				mFileInfo.setError("File size < 5KB");
 				error = true;
 				return null;
 			}

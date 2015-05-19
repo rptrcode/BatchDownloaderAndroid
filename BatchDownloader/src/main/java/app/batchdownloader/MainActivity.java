@@ -2,6 +2,7 @@ package app.batchdownloader;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -23,24 +24,23 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import ar.com.daidalos.afiledialog.FileChooserDialog;
 
 public class MainActivity extends Activity {
+	static Context appContext;
 	public int spawnedTasks = 0;
 	public int errorTasks = 0;
 	public int finishedTasks = 0;
 	ExpandableListAdapter adapter;
-
 	SparseArray<Group> tasksGroups = new SparseArray<Group>();
 	Group spawnedTasksGroup = new Group("In Progress");
 	Group finishedTasksGroup = new Group("Finished");
 	Group errorTasksGroup = new Group("Failed");
-
 	List<String> list = new CopyOnWriteArrayList<String>();
 	Iterator<String> iter;
-
 	String clipboardUrl = "";
-
-
 	FileChooserDialog fileDialog;
 
+	public static void alert(String string) {
+		Toast.makeText(appContext, string, Toast.LENGTH_SHORT).show();
+	}
 
 	@Override
 	protected void onResume() {
@@ -123,6 +123,8 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		appContext = getApplicationContext();
+
 		setContentView(R.layout.activity_main);
 		Button gobtn = (Button) findViewById(R.id.button);
 		gobtn.setOnClickListener(new View.OnClickListener() {
@@ -217,30 +219,4 @@ public class MainActivity extends Activity {
 		iter = list.iterator();
 	}
 
-
-	public static class FileInfo {
-		private String filename;
-		private String filepath;
-
-		public FileInfo(String path, String name) {
-			filepath = path;
-			filename = name;
-		}
-
-		void setFilename(String str) {
-			filename = str;
-		}
-
-		public String getFilename() {
-			return filename;
-		}
-
-		void setFilepath(String str) {
-			filepath = str;
-		}
-
-		public String getFilepath() {
-			return filepath;
-		}
-	}
 }

@@ -4,8 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Group {
-
-	public final List<MainActivity.FileInfo> children = new ArrayList<>();
+	private final List<FileInfo> children = new ArrayList<>();
 	private String groupName;
 
 	public Group(String string) {
@@ -22,5 +21,9 @@ public class Group {
 
 	public int size() {
 		return children.size();
+	}
+
+	public List<FileInfo> children() {
+		return children;
 	}
 }

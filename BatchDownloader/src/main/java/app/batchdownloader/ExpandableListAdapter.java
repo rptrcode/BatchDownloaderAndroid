@@ -10,11 +10,9 @@ import android.widget.CheckedTextView;
 import android.widget.TextView;
 
 public class ExpandableListAdapter extends BaseExpandableListAdapter {
-
-
 	private final SparseArray<Group> groups;
-	public LayoutInflater inflater;
-	public Activity activity;
+	private LayoutInflater inflater;
+	private Activity activity;
 
 
 	public ExpandableListAdapter(Activity act, SparseArray<Group> groups) {
@@ -25,7 +23,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 
 	@Override
 	public Object getChild(int groupPosition, int childPosition) {
-		return groups.get(groupPosition).children.get(childPosition);
+		return groups.get(groupPosition).children().get(childPosition);
 	}
 
 	@Override
@@ -36,35 +34,27 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 	@Override
 	public View getChildView(int groupPosition, final int childPosition,
 	                         boolean isLastChild, View convertView, ViewGroup parent) {
-		final MainActivity.FileInfo child = (MainActivity.FileInfo) getChild(groupPosition, childPosition);
-		TextView text = null;
+		final FileInfo child = (FileInfo) getChild(groupPosition, childPosition);
+		if (child == null)
+			return null;
 		if (convertView == null) {
 			convertView = inflater.inflate(R.layout.row_layout, null);
 		}
-		text = (TextView) convertView.findViewById(R.id.textView1);
-		text.setText(child.getFilename());
+		((TextView) convertView.findViewById(R.id.detail1)).setText(child.getFilename());
+		((TextView) convertView.findViewById(R.id.detail2)).setText(child.getError());
 		convertView.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				//Toast.makeText(activity, children, Toast.LENGTH_SHORT).show();
-
-//				TextView filepath = (TextView) activity.findViewById(R.id.path_text);
-//				TextView urlview = (TextView) activity.findViewById(R.id.url_edit_text);
-//				String urlString = urlview.getText().toString();
-//				String str = urlString.substring(urlString.indexOf("http://") + 6, urlString.lastIndexOf("/"));
-//				String filepathstr = filepath.getText().toString() + str;
-				ImageViewer imageViewer = new ImageViewer(activity, child.getFilepath(), child.getFilename());
-
+				new ImageViewer(activity, child.getFilepath(), child.getFilename()).show();
 			}
 		});
 		return convertView;
 	}
 
 
-
 	@Override
 	public int getChildrenCount(int groupPosition) {
-		return groups.get(groupPosition).children.size();
+		return groups.get(groupPosition).size();
 	}
 
 	@Override

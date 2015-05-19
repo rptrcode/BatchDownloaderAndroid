@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Batch Downloader</string>
-    <string name="urlpath">From where should I download?</string>
-    <string name="filepath">Where to store downloaded files?</string>
+    <string name="urlpath">Paste http/https link here</string>
+    <string name="filepath">Select directory to save files</string>
 </resources>

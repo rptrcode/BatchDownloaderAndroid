@@ -25,6 +25,7 @@ public class ClipboardListener implements ClipboardManager.OnPrimaryClipChangedL
 			clipText = item.getText().toString();
 			if (clipText.startsWith("http://") || clipText.startsWith("https://")) {
 				//clipboardUrl = clipText;
+				mActivity.alert("Started downloading " + clipText);
 				mActivity.singleFileDownload(clipText);
 			}
 		}
